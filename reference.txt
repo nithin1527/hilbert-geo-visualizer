@@ -1,0 +1,478 @@
+const math = require('mathjs');
+
+class Point {
+    /* (x:Float, y:Float, color:String, radius:Float) */
+    constructor (x,y, color="purple", radius=3, showInfo=false) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.radius = radius;
+        this.showInfo = showInfo;
+    }
+
+    isOn(segment) {
+      return Math.min(segment.start.x, segment.end.x) <= this.x && 
+      this.x <= Math.max(segment.start.x, segment.end.x) &&
+      Math.min(segment.start.y, segment.end.y) <= this.y && 
+      this.y <= Math.max(segment.start.y, segment.end.y);
+    }
+
+    isEqual(point) { return this.x === point.x && this.y === point.y; }
+    setColor(color) { this.color = color; }
+    setRadius(radius) { this.radius = radius; }
+    setShowInfo(showInfo) { this.showInfo = showInfo; }
+}
+
+class Segment {
+    /* (start:Point, end:Point, color:String) */
+    constructor(start, end, color = "black", penWidth = 2.5) {
+        this.start = start;
+        this.end = end;
+        this.color = color;
+        this.penWidth = penWidth;
+    }
+  
+    /* (segment:Segment) -> (Point) */
+    intersect(segment) {
+      let intersection = intersectSegments(this, segment);
+      if (intersection) { intersection.setColor(this.color); }
+      return intersection
+    }
+  
+    isEqual(segment) { this.start.isEqual(segment.start) && this.end.isEqual(segment.end)}
+    setColor(color) { this.color = color; }
+}
+
+class Spoke {
+    /* (A:Point, C:Point, D:Point, color:String) */
+    constructor(A, C, D, color="blue") {
+        this.A = A;
+        this.C = C;
+        this.D = D;
+        this.color = color;
+    }
+}
+
+class Site extends Point {
+    /* (x:Float, y:Float, convexPolygon:ConvexPolygon, color:String, drawSpokes:Bool) */
+    constructor (x, y, convexPolygon, color='blue', drawSpokes=true) {
+        super(x, y, color);
+        this.convexPolygon = convexPolygon;
+        this.spokes = getSpokes(this, this.convexPolygon);
+        this.drawSpokes = drawSpokes;
+        this.pspokes = this.getPartialSpokes();
+    }
+    getPartialSpokes() {
+        var partialSpokeIntersections = [];
+        for (let spoke of this.spokes) {
+            partialSpokeIntersections.push(spoke.A);
+            partialSpokeIntersections.push(spoke.D);
+        }
+        let x = this.x;
+        let y = this.y;
+        partialSpokeIntersections.sort((point1, point2) => tanInverse(point1.x - x, point1.y - y) - tanInverse(point2.x - x, point2.y - y));
+        let partialSpokes = []
+        for (let intersectionIndex = 0; intersectionIndex < partialSpokeIntersections.length; intersectionIndex++) {
+            partialSpokes.push(new PartialSpoke(this, partialSpokeIntersections[intersectionIndex], intersectionIndex));
+        }
+        return partialSpokes;
+    }
+}
+
+class ConvexPolygon {
+    constructor(vertices=[], color="black", penWidth=2.5, showInfo=false, showVertices=true, vertexRadius=3) {
+        this.vertices = vertices;
+        this.segments = createSegmentsFromVertices(this.vertices);
+        this.color = color;
+        this.penWidth = penWidth;
+        this.showInfo = showInfo;
+        this.showVertices = showVertices;
+        this.vertexRadius = vertexRadius;
+    }
+    
+    addVertex(vertex) {
+        this.vertices.push(vertex);
+        this.vertices = convexHull(this.vertices);
+        if (this.vertices.length > 1) { this.segments = createSegmentsFromVertices(this.vertices); }
+    }
+
+    contains(point) {
+        let vertices = this.vertices;
+        let inside = false;
+        for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+          const { x: xi, y: yi } = vertices[i];
+          const { x: xj, y: yj } = vertices[j];
+          if ((yi > point.y) !== (yj > point.y) && point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi) {
+            inside = !inside;
+          }
+        }
+        return inside;
+    }
+
+    /* (body:ConvexPolygon, line:Segment) -> (Set(Point)) */
+    intersectWithLine(line) {
+        let intersections = new Set()
+        for (let edge of this.segments) {
+            let intersection = edge.intersect(line);
+            if (intersection && ((edge.start.x <= intersection.x && edge.end.x >= intersection.x) || (edge.start.x >= intersection.x && edge.end.x <= intersection.x)) && ((edge.start.y <= intersection.y && edge.end.y >= intersection.y) || (edge.start.y >= intersection.y && edge.end.y <= intersection.y))) {
+                intersections.add(intersection);
+                if ((edge.start.x === intersection.x && edge.end.y === intersection.y) || (edge.end.x === intersection.x && edge.end.y === intersection.y)) {
+                    return intersections;
+                }
+            }
+        }
+        return intersections;
+    }
+
+    setColor(color) { this.color = color;  }
+    setPenWidth(penWidth) { this.penWidth = penWidth; }
+    setShowInfo(showInfo) { this.showInfo = showInfo;}
+    setShowVertices(showVertices) { this.showVertices = showVertices; }
+    setVertexRadius(vertexRadius) { this.vertexRadius = vertexRadius; }
+}
+
+class Sector {
+    // s1 and s2 are sites, omega is the convex polygon, OE1-4 are the omega edges, v1-4 are the vertices of the sector
+    /*
+	    (s1:Site, s2:Site, omega:ConvexPolygon, OE1:Segment, OE2:Segment, OE3:Segment, OE4:Segment, v1:Point, v2:Point, v3:Point, v4:Point)
+    */
+    constructor(s1, s2, omega, OE1, OE2, OE3, OE4, v1, v2, v3, v4) {
+        this.s1 = s1;
+        this.s2 = s2;
+        this.omega = omega;
+        this.OE1 = OE1;
+        this.OE2 = OE2;
+        this.OE3 = OE3;
+        this.OE4 = OE4;
+        this.sector = new ConvexPolygon(v1, v2, v3, v4);
+    }
+}
+
+class PartialSpoke extends Segment {
+    // intersectionPoint is intersection point with omega, could be vertex
+    // (site:Site, intersectionPoint:Point, index:Number)
+    constructor(site, intersectionPoint, index) {
+		super(site,intersectionPoint);
+        this.site = site;
+        this.index = index;
+        this.intersectionPoint = intersectionPoint
+    }
+}
+
+class Bisector {
+    // (bisectorTriples: Array:[BisectorTriple])
+    constructor(bisectorTriples) {
+        this.triples = bisectorTriples;
+    }
+}
+
+class BisectorTriple {
+    // (start:Point, end:Point, a:Number, b:Number, c:Number, d:Number, e:Number, f:Number)
+    constructor(start, end, a, b, c, d, e, f) {
+        this.start = start;
+        this.end = end;
+        this.equation = {
+            a: a,
+            b: b,
+            c: c,
+            d: d,
+            e: e,
+            f: f
+        };
+    }
+}
+
+class MiddleBisectorTriple {
+    constructor(sector, d, e, f) {
+        this.sector = sector;
+        this.equation = {
+            a: 0,
+            b: 0,
+            c: 0,
+            d: d,
+            e: e,
+            f: f
+        };
+        if (e !== 0) this.slopeIntercept = { m: -d/e, b: -f/e };
+        else this.slopeIntercept = { x: -F/D };
+        [end1, end2] = this.calculateEndPoints();
+        this.end1 = end1;
+        this.end2 = end2;
+    }
+    calculateEndPoints() {
+        if (e==0) {
+            var line = new Segment(new Point(-f/d, 0), new Point(-f/d, 1));
+        } else if (d==0) {
+            var line = new Segment(new Point(0, -e/d), new Point(1, -e/d));
+        } else {
+            var line = new Segment(new Point(-f/d, 0), new Point(0, -e/d));
+        }
+        return this.sector.intersectWithLine(line);
+    }
+}
+
+class MiddleSector {
+	// (s1: Site, s2: Site, omega: ConvexPolygon)
+	constructor(s1,s2,omega) { 
+		this.s1 = s1; 
+		this.s2 = s2;
+		this.omega = omega;
+		this.isDegenerate = false;
+        this.partialSpokes = [];
+		this.sector = this.createMiddleSector();
+	}
+  
+    createMiddleSector() {
+		// check if sites are not on each others spokes
+		for (let partialSpoke of this.s1.pspokes) {
+			if (s2.isON(partialSpoke)) {
+				this.isDegenerate = true;
+				break;
+			}
+            if (!this.isDegenerate) {
+                let [ps1, ps2, ps3, ps4] = getFourPartialSpoke();
+                this.partialSpokes = [ps1, ps2, ps3, ps4];
+                let intersect1 = getBoundedCone(ps3,ps4).intersectWithLine(ps1);
+                let intersect2 = getBoundedCone(ps3,ps4).intersectWithLine(ps2);
+                return new ConvexPolygon([this.s1, this.s2, intersect1, intersect2]);
+            } else {
+                return new ConvexPolygon([this.s1, this.s2]);
+            }
+        }
+  
+	    function getBoundedCone(ps1, ps2) {
+            let vertices = [ps1.start, ps1.end, ps2.end];
+            return new ConvexPolygon(vertices);
+        }
+  
+        function getFourPartialSpoke() {
+            // (ps1: PartialSpoke, ps2:PartialSpoke, s:Site) -> (ConvexPolygon)
+            function getTwoPartialSpoke(pspokes,s) {
+                let pspoke1, pspoke2;
+                for (let i = 0; i < pspokes.length; i++) {
+                        pspoke1 = pspokes[i];
+                        pspoke2 = pspokes[(i+1) % pspokes.length];
+                        let boundedCone = getBoundedCone(pspoke1, pspoke2);
+                        if (boundedCone.contains(s)) return [pspoke1, pspoke2];
+                } 
+            }
+            let [pspoke1, pspoke2] = getTwoPartialSpoke(this.s1.pspokes, this.s2);
+            let [pspoke3, pspoke4] = getTwoPartialSpoke(this.s2.pspokes, this.s1);
+            return [pspoke1, pspoke2, pspoke3, pspoke4]
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// createSector() takes omega (the convex polygon), s1 and s2 (the sites), and partial spokes 1-4
+// It finds the intersections of the spokes to get the edges and vertices of the sector and then returns a new sector object
+/*
+	(omega:ConvexPolygon, s1:Site, s2:Site, partialSpoke1:PartialSpoke, partialSpoke2:PartialSpoke, partialSpoke3:PartialSpoke, partialSpoke4:PartialSpoke) -> (Sector)
+*/
+function createSector(omega, s1, s2, partialSpoke1, partialSpoke2, partialSpoke3, partialSpoke4) {
+    v1 = math.intersect(partialSpoke1, partialSpoke2);
+    v2 = math.intersect(partialSpoke2, partialSpoke3);
+    v3 = math.intersect(partialSpoke3, partialSpoke4);
+    v4 = math.intersect(partialSpoke4, partialSpoke1);
+    return new Sector(s1, s2, omega, new Segment(v1, v2), new Segment(v2, v3), new Segment(v3, v4), new Segment(v4, v1), v1, v2, v3, v4);
+}
+
+// (line:Segment)
+function calculateLineEquation(line) {
+    // This is where ax+by+c=0
+    if (line.start.x == line.end.x) {
+        var a = 1;
+        var b = 0;
+        var c = -1*line.start.x;
+    } else {
+        var a = (line.start.y-line.end.y) / (line.end.x-line.start.x);
+        var b = 1;
+        var c = -1*a*line.start.x - line.start.y;
+    }
+    return [a,b,c]; 
+}
+
+// (s1:Site, s2:Site, E1:Segment, E2:Segment, E3:Segment, E4:Segment)
+// Formula found here: https://arxiv.org/abs/2112.03056
+function calculateBisectorPiece(s1, s2, E1, E2, E3, E4) {
+    let [a1, a2, a3] = calculateLineEquation(E1);
+    let [b1, b2, b3] = calculateLineEquation(E2);
+    let [c1, c2, c3] = calculateLineEquation(E3);
+    let [d1, d2, d3] = calculateLineEquation(E4);
+    let k = (b1*s1.x + b2*s1.y + b3) * (c1*s2.x + c2*s2.y + c3) /
+        (a1*s1.x + a2*s1.y + a3) / (d1*s2.x + d2*s2.y + d3);
+    let A = b1*c1 - a1*d1*k;
+    let B = b2*c1 + b1*c2 - a1*d2*k - a2*d1*k;
+    let C = b2*c2 - a2*d2*k;
+    let D = b3*c1 + b1*c3 - a3*d1*k - a1*d3*k;
+    let E = b3*c2 + b2*c3 - a2*d3*k - a3*d2*k;
+    let F = b3*c3 - a3*d3*k;
+    return [A, B, C, D, E, F]
+}
+
+function getMiddleSectorEdges(intersection1, intersection2, omega) {
+	var edges = [];
+	for (side of omega.segments) {
+		if (intersection1.isOn(side)) {
+			edges.push(side);
+		}
+		if (intersection2.isOn(side)) {
+			edges.push(side);
+		}
+		if (edges.length == 2) {
+			break;
+		}
+	}
+	return edges;
+}
+
+function getMiddleSectorIntersectionPoints(s1, s2, omega) {
+	return omega.intersectLine(new Segment(s1, s2));
+}
+
+function hilbertDistance(s1, s2, intersection1, intersection2) {
+    return 0.5 * Math.log(norm(s1, intersection2) * norm(s2, intersection1) /
+        norm(s2, intersection2) / norm(s1, intersection1));
+}
+
+function getPointOnSpoke(A, C, D, r) {
+    const scalar = 1 / (1 + (norm(C, D) / norm(A, C)) * Math.exp(2 * r));
+    const dx = D.x - A.x;
+    const dy = D.y - A.y;
+    return new Point(scalar * dx + A.x, scalar * dy + A.y)
+}
+
+function intersectSegments(s1,s2) {
+    const intersection = math.intersect(
+        [s1.start.x, s1.start.y], [s1.end.x, s1.end.y], 
+        [s2.start.x, s2.start.y],[s2.end.x, s2.end.y]
+    );
+    if (intersection) {
+        const [x, y] = intersection;
+        return new Point(x, y);
+    }
+    return null;
+}
+
+function getSpokes(site, convexPolygon) {
+    const spokes = [];
+    convexPolygon.vertices.forEach(vertex => {
+        let closestIntersect = null;
+        let minDist = Infinity;
+        for (let i = 0; i < convexPolygon.segments.length; i++) {
+            const segment = convexPolygon.segments[i];
+            const intersection = segment.intersect(new Segment(vertex, site));
+            if (intersection && !(intersection.isEqual(vertex))) {
+              if (intersection.isOn(segment)) {
+                const dist = Math.sqrt((intersection.x - site.x) ** 2 + (intersection.y - site.y) ** 2);
+                if (dist < minDist) { minDist = dist; closestIntersect = intersection; }
+              }
+            }
+        }
+        if (closestIntersect) { spokes.push(new Spoke(vertex, site, closestIntersect, site.color)); }
+    });
+    return spokes;
+}
+
+function tanInverse(x, y) {
+    if (x<0) {
+        return Math.PI + Math.atan(y/x);
+    } else if (x==0) {
+        if (y>0) {
+            return Math.PI/2;
+        } else {
+            return 3*Math.PI/2;
+        }
+    } else if (y>=0) {
+        return Math.atan(y/x);
+    } else {
+        return 2*Math.PI + Math.atan(y/x);
+    }
+}
+
+// for a sector and one of the sites s and any point p in the sector, the line ps intersects the boundary of omega at 2 edges
+// omegaEdges() returns these 2 edges in a list
+// call omegaEdges() with both sites to get all 4 edges that define the sector
+/*
+	(sector:Sector, s:Site) -> ([Segment])
+*/
+function omegaEdges(sector, s) {
+    let centroid = [(sector.v1.x + sector.v2.x + sector.v3.x + sector.v4.x) / 4, (sector.v1.y + sector.v2.y + sector.v3.y + sector.v4.y) / 4];
+    let OEs = [];
+    for (segment in this.omega.segments) {
+        if (onBoundary(math.intersect(centroid, s, segment.start, segment.end))) {
+            OEs.push(edge);
+        }
+    }
+    return (OEs);
+}
+
+function isOnLine(point, segment) {
+    let [a, b, c] = calculateLineEquation(segment.start, segment.end);
+    return abs(a*point.x + b*point.y + c) <= 0.001;
+}
+
+// (intersectedSite:Site, intersectedPartialSpoke:PartialSpoke, intersectedConeDirection:String, nonintersectedPartialSpoke1:PartialSpoke, nonintersectedPartialSpoke2:PartialSpoke, numberOfPartialSpokes:int) -> ([PartialSpoke])
+function findFourSpokesForEndpoint(intersectedSite, intersectedPartialSpoke, intersectedConeDirection, nonintersectedPartialSpoke1, nonintersectedPartialSpoke2, numberOfPartialSpokes) {
+    if (intersectedConeDirection == "CW") {
+        var newPartialSpoke = intersectedSite.pspokes[(intersectedPartialSpoke.index + 1) % numberOfPartialSpokes];
+    } else {
+        var newPartialSpoke = intersectedSite.pspokes[(intersectedPartialSpoke.index - 1) % numberOfPartialSpokes];
+    }
+    return [intersectedPartialSpoke, newPartialSpoke, nonintersectedPartialSpoke1, nonintersectedPartialSpoke2];
+}
+
+function getExitPoint(sector, bisector, entryPoint, omega) {
+    let intersections = intersectBisectorWithSector(sector, bisector, omega);
+    if ((intersections[0].isEqualFloatingPoint(entryPoint))) {
+        var exitPoint = intersections[1];
+    }
+    else {
+        var exitPoint = intersections[0];
+    }
+    
+    
+    
+    return new BisectorTriple(entryPoint, exitPoint, bisector.equation);
+}
+
+/*
+  (vertices:Point) -> ([Segment])
+*/
+function createSegmentsFromVertices(vertices) {
+    if (vertices.length == 0) { return []; }
+    else {
+        const segments = [];
+        //const color = vertices[0].color;
+        for (let i = 0; i < vertices.length; i++) {
+            const start = vertices[i];
+            const end = vertices[(i + 1) % vertices.length];
+            segments.push(new Segment(start, end));
+        }
+        return segments;
+    }
+}
+
+/* (point:Point, body:ConvexPolygon) -> (Boolean) */
+function pointOnConvexBody(point, body) {
+    for (segment of body.segments) {
+        let eq = calculateLineEquation(segment);
+        if (eq[0] * point.x + eq[1] * point.y + eq[2] == 0 && (((segment.start.x <= point.x && segment.end.x >= point.x) || (segment.start.x >= point.x && segment.end.x <= point.x)) && (((segment.start.y <= point.y && segment.end.y >= point.y) || (segment.start.y >= point.y && segment.end.y <= point.y))))) {
+            return true;
+        }
+    }
+    return false;
+}

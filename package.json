@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "main": "default-objects.js",
+  "type": "module",
+  "dependencies": {
+    "live-server": "^1.2.2",
+    "nerdamer": "^1.1.13"
+  }
+}
