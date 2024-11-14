@@ -1,5 +1,5 @@
 import { Bisector, HilbertBall, MiddleSector, Point, Site } from "../../default-objects.js";
-import { drawHilbertMinimumEnclosingRadiusBall, hilbertDistance, createScatterPlot, findHilbertCircumCenter, drawBisectorsOfHilbertCircumcenter } from "../../default-functions.js";
+import { drawHilbertMinimumEnclosingRadiusBall, hilbertDistance, createScatterPlot, findHilbertCircumCenter, drawBisectorsOfHilbertCircumcenter, create3DPlotInNewWindow } from "../../default-functions.js";
 import { SiteManager } from "./site.js";
 import { isAnyModalOpen } from "../scripts/scripts-json-events.js";
 import { hilbertMidpoint } from "../../default-functions.js";
@@ -173,6 +173,7 @@ export function initContextMenu(siteManager) {
     const saveHilbertDistanceItem = document.getElementById('saveHilbertDistance');
     const drawSegmentItem = document.getElementById('drawSegment');
     const drawBisector = document.getElementById('drawBisector');
+    const plotPerimeterItem = document.getElementById('plotPerimeter');
     const drawZRegion = document.getElementById('drawZRegion');
     const calcPerimBall = document.getElementById('calcPerimBall');
     const calcLengthOfSegment = document.getElementById('calcLengthOfSegment');
@@ -202,6 +203,7 @@ export function initContextMenu(siteManager) {
             calcLengthOfSegment.style.display = 'none';
             saveHilbertDistanceItem.style.display = 'none';
             calculateHilbertDistanceItem.style.display = 'none';
+            plotPerimeterItem.style.display = 'none';
             drawHMERB.style.display = 'none';
             
             drawHilbertCircumcenter.style.display = 'block';
@@ -230,7 +232,9 @@ export function initContextMenu(siteManager) {
             calcLengthOfSegment.style.display = 'none';
             drawHilbertCircumcenter.style.display = 'none';
             drawHilbertCircumcenterBisectors.style.display = 'none';
+            plotPerimeterItem.style.display = 'none';
             drawHMERB.style.display = 'none';
+            plotPerimeterItem.style.display = 'block';
 
         } else if (siteManager.checkOneSiteSelected()) {
 
@@ -252,6 +256,7 @@ export function initContextMenu(siteManager) {
                 drawHilbertCircumcenter.style.display = 'none';
                 drawHilbertCircumcenterBisectors.style.display = 'none';
                 drawHMERB.style.display = 'none';
+                plotPerimeterItem.style.display = 'none';
             }
             
         } else if (siteManager.checkOneSegmentSelected()) {
@@ -271,6 +276,7 @@ export function initContextMenu(siteManager) {
             drawHilbertCircumcenter.style.display = 'none';
             drawHilbertCircumcenterBisectors.style.display = 'none';
             drawHMERB.style.display = 'none';
+            plotPerimeterItem.style.display = 'none';
 
         } else if (siteManager.checkAnySelected()) {
             event.preventDefault();
@@ -289,6 +295,7 @@ export function initContextMenu(siteManager) {
             drawHilbertCircumcenter.style.display = 'none';
             drawHilbertCircumcenterBisectors.style.display = 'none';
             drawHMERB.style.display = 'block';
+            plotPerimeterItem.style.display = 'none';
         } else {
             contextMenu.style.display = 'none';
         }
@@ -348,6 +355,31 @@ export function initContextMenu(siteManager) {
             siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
             if (selectedSites.length === 2) {
                 siteManager.bisectorManager.createBisector(selectedSites[0], selectedSites[1]);
+            }
+            contextMenu.style.display = 'none';
+        });
+
+        plotPerimeterItem.addEventListener('click', () => {
+            console.log('Plot Perimeter Item Selected');
+            const selectedSites = siteManager.getSelectedSites();
+            siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
+            if (selectedSites.length === 2) {
+                let bisector = siteManager.bisectorManager.createTempBisector(selectedSites[0], selectedSites[1]);
+                let plottingPoints = bisector.plottingPoints;
+                let polygon = siteManager.canvas.polygon;
+                
+                let perimeterTuples = [] 
+                plottingPoints.forEach(center => {
+                    try {
+                        let perim = new HilbertBall(
+                            new Site(center.x, center.y, polygon),
+                            hilbertDistance(selectedSites[0], center, polygon)
+                        ).computePerimeter(polygon);
+                        perimeterTuples.push([center.x, center.y, perim]);
+                    } catch (error) {}
+                });
+
+                create3DPlotInNewWindow(perimeterTuples);
             }
             contextMenu.style.display = 'none';
         });

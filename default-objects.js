@@ -22,7 +22,11 @@ import {
   findNearestNeighborValue,
   getHeatMapColor,
   crossProduct,
-  findHilbertCircumCenter
+  findHilbertCircumCenter,
+  determineConic,
+  generateEllipsePoints,
+  generateHyperbolaPoints,
+  generateLinePoints
 } from './default-functions.js';
 
 export class Point {
@@ -578,7 +582,7 @@ export class HilbertBall extends Site {
     this.polygon.segments.forEach(segment => {
       let length = hilbertDistance(segment.start, segment.end, polygon);
       perim += length;
-      console.log('Segment:', segment, 'Length: ', length);
+      // console.log('Segment:', segment, 'Length: ', length);
     });
     return perim
   }
@@ -865,6 +869,8 @@ export class Bisector {
     return { boundaryCone, nonBoundaryCone }
   }
 
+  
+
   computeBisector(s1, s2) {
     this.middleSector = new MiddleSector(s1, s2, this.omega);
     this.s1 = s1;
@@ -873,6 +879,7 @@ export class Bisector {
     this.bisectorPiecesDir1 = this.getBisectorPieces(this.middleSector.endpoints[0]);
     this.bisectorPiecesDir2 = this.getBisectorPieces(this.middleSector.endpoints[1]);
     this.bisectorPieces = [this.middleSector.bisectorPiece].concat(this.bisectorPiecesDir1, this.bisectorPiecesDir2);
+    this.plottingPoints = this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []);
   }
 
   draw(ctx) {
@@ -893,7 +900,25 @@ export class BisectorPiece {
     this.isMiddleSector = isMiddleSector;
     this.isLine = this.isMiddleSector ? true : isLine
     this.color = "green";
+
     this.pointsOnPiece = getPointsForDrawboundedShape(this, this.isLine);
+    this.plottingPoints = this.generatePoints();
+  }
+
+  generatePoints(granularity = 50) {
+    if (this.isLine) {
+      return generateLinePoints(this.start, this.end, granularity);
+    } else {
+      const conicType = determineConic(this.equation);
+      if (conicType === 'ellipse') {
+        return generateEllipsePoints(this.equation, this.start, this.end, granularity);
+      } else if (conicType === 'hyperbola') {
+        return generateHyperbolaPoints(this.equation, this.start, this.end, this.sector, granularity);
+      } else {
+        console.warn("Unsupported conic type:", conicType);
+        return [];
+      }
+    }
   }
 
   draw(ctx, color = 'green') {

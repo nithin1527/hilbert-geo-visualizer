@@ -731,7 +731,6 @@ export function drawBoundedHyperbola(ctx, sector, equation, startPoint, endPoint
 
   ctx.stroke();
 
-    
 }
 
 export function findNearestNeighborValue(piValues, x, y) {
@@ -1542,4 +1541,239 @@ export function crossProduct(px, py, qx, qy, rx, ry){
   const prx = rx - px;
   const pry = ry - py;
   return pqx * pry - pqy * prx;
+}
+
+// Utility function to generate points along a line segment
+export function generateLinePoints(start, end, granularity) {
+  const points = [];
+  const dx = (end.x - start.x) / granularity;
+  const dy = (end.y - start.y) / granularity;
+
+  for (let i = 0; i <= granularity; i++) {
+    points.push(new Point(start.x + dx * i, start.y + dy * i));
+  }
+
+  return points;
+}
+
+// Utility function to generate points along an ellipse segment
+export function generateEllipsePoints(equation, startPoint, endPoint, granularity) {
+  const points = [];
+  const { center, a, b, rotationAngle } = getEllipseParams(equation);
+  const startAngle = pointToAngle(startPoint, center, a, b, rotationAngle);
+  const endAngle = pointToAngle(endPoint, center, a, b, rotationAngle);
+
+  // Determine sweep direction
+  const deltaAngle = (endAngle - startAngle + 2 * Math.PI) % (2 * Math.PI);
+  const clockwise = deltaAngle < Math.PI;
+
+  // Calculate total angle to sweep
+  const totalAngle = clockwise ? deltaAngle : (2 * Math.PI - deltaAngle);
+
+  // Calculate angle increment based on granularity
+  const angleStep = totalAngle / granularity;
+
+  for (let i = 0; i <= granularity; i++) {
+    const angle = startAngle + (clockwise ? 1 : -1) * angleStep * i;
+    const x = center.x + a * Math.cos(angle) * Math.cos(rotationAngle) - b * Math.sin(angle) * Math.sin(rotationAngle);
+    const y = center.y + a * Math.cos(angle) * Math.sin(rotationAngle) + b * Math.sin(angle) * Math.cos(rotationAngle);
+    points.push(new Point(x, y));
+  }
+
+  return points;
+}
+
+// Utility function to generate points along a hyperbola segment
+export function generateHyperbolaPoints(equation, startPoint, endPoint, sector, granularity) {
+  const points = [];
+  const { canvasWidth, canvasHeight } = { canvasWidth: 1500, canvasHeight: 850 };
+
+  // Determine x-direction
+  let leftX = Math.min(startPoint.x, endPoint.x);
+  let rightX = Math.max(startPoint.x, endPoint.x);
+
+  // Calculate step size based on granularity
+  const xStep = (rightX - leftX) / granularity;
+
+  let lastValidPoint = startPoint;
+
+  for (let i = 1; i <= granularity; i++) {
+    const x = leftX + i * xStep;
+    const roots = getConicRoots(equation, x);
+
+    let closestY = null;
+    let minDistance = Infinity;
+
+    for (const y of roots) {
+      if (y >= 0 && y <= canvasHeight) {
+        const point = new Point(x, y);
+        if (sector.sector.contains(point) || sector.sector.onBoundary(point)) {
+          const distance = Math.abs(y - lastValidPoint.y);
+          if (distance < minDistance) {
+            closestY = y;
+            minDistance = distance;
+          }
+        }
+      }
+    }
+
+    if (closestY !== null) {
+      const newPoint = new Point(x, closestY);
+      points.push(newPoint);
+      lastValidPoint = newPoint;
+    }
+  }
+
+  // Ensure the endpoint is included
+  points.push(new Point(endPoint.x, endPoint.y));
+
+  return points;
+}
+
+/**
+ * Creates a 3D plot in a new browser window using Plotly.js.
+ *
+ * @param {Array} dataTuples - An array of tuples, each representing a point in the form [x, y, z].
+ * @param {Object} options - Optional parameters for customization.
+ *   - {String} title - The title of the plot.
+ *   - {String} plotType - Type of plot: 'scatter3d' or 'surface'.
+ *   - {String} color - Color of the markers or surface.
+ *   - {Number} markerSize - Size of the markers (applicable for scatter3d).
+ *   - {String} colorscale - Color scale for the plot (applicable for surface).
+ */
+export function create3DPlotInNewWindow(dataTuples, options = {}) {
+
+  const {
+    title = '3D Plot',
+    plotType = 'scatter3d', // Options: 'scatter3d', 'surface'
+    color = 'rgba(255, 0, 0, 0.8)',
+    markerSize = 3,
+    colorscale = 'Jet',
+  } = options;
+
+  // Validate dataTuples
+  if (!Array.isArray(dataTuples) || dataTuples.length === 0) {
+    console.error('create3DPlotInNewWindow: dataTuples should be a non-empty array of [x, y, z] tuples.');
+    return;
+  }
+
+  // Extract X, Y, Z coordinates
+  const x = dataTuples.map(tuple => tuple[0]);
+  const y = dataTuples.map(tuple => tuple[1]);
+  const z = dataTuples.map(tuple => tuple[2]);
+
+  // Define the trace based on plot type
+  let trace;
+  if (plotType === 'scatter3d') {
+    trace = {
+      x: x,
+      y: y,
+      z: z,
+      mode: 'markers',
+      type: 'scatter3d',
+      marker: {
+        size: markerSize,
+        color: z, // Using z for color mapping
+        colorscale: colorscale,
+        opacity: 0.8,
+        colorbar: {
+          title: 'Z-Value',
+        },
+      },
+      text: dataTuples.map(tuple => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]})`),
+      hoverinfo: 'text',
+    };
+  } else if (plotType === 'surface') {
+    // For surface plots, data needs to be in grid format.
+    // Assuming dataTuples form a grid, we need to reshape x, y, z accordingly.
+
+    // Determine unique X and Y values
+    const uniqueX = [...new Set(x)].sort((a, b) => a - b);
+    const uniqueY = [...new Set(y)].sort((a, b) => a - b);
+
+    const gridX = uniqueX;
+    const gridY = uniqueY;
+    const gridZ = [];
+
+    // Populate gridZ
+    uniqueY.forEach(yi => {
+      const row = uniqueX.map(xi => {
+        const point = dataTuples.find(tuple => tuple[0] === xi && tuple[1] === yi);
+        return point ? point[2] : null; // Assign null if no data point exists
+      });
+      gridZ.push(row);
+    });
+
+    trace = {
+      x: gridX,
+      y: gridY,
+      z: gridZ,
+      type: 'surface',
+      colorscale: colorscale,
+      opacity: 0.8,
+      colorbar: {
+        title: 'Z-Value',
+      },
+    };
+  } else {
+    console.error(`create3DPlotInNewWindow: Unsupported plot type '${plotType}'. Use 'scatter3d' or 'surface'.`);
+    return;
+  }
+
+  const data = [trace];
+
+  const layout = {
+    title: title,
+    autosize: true,
+    scene: {
+      xaxis: { title: 'X' },
+      yaxis: { title: 'Y' },
+      zaxis: { title: 'Z' },
+    },
+    margin: {
+      l: 0,
+      r: 0,
+      b: 0,
+      t: 50,
+    },
+  };
+
+  // Open a new window and write the Plotly plot
+  const plotWindow = window.open('', '_blank');
+
+  // HTML content with Plotly.js
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${title}</title>
+      <!-- Load Plotly.js from CDN -->
+      <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          background-color: white;
+        }
+        #plotContainer {
+          width: 100vw;
+          height: 100vh;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="plotContainer"></div>
+      
+      <script>
+        const data = ${JSON.stringify(data)};
+        const layout = ${JSON.stringify(layout)};
+        Plotly.newPlot('plotContainer', data, layout);
+      </script>
+    </body>
+    </html>
+  `;
+
+  // Write the HTML content to the new window
+  plotWindow.document.write(htmlContent);
+  plotWindow.document.close();
 }

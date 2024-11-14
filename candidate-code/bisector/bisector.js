@@ -37,6 +37,12 @@ export class BisectorManager {
         this.addSavedBisector([s1, s2], bisector);
     }
 
+    createTempBisector(s1, s2) {
+        let middleSector = new MiddleSector(s1, s2, this.canvas.polygon);
+        let bisector = new Bisector(middleSector);
+        return bisector;
+    }
+
     addSavedBisector(selectedSites, bisector) {
         const [site1, site2] = selectedSites;
         
