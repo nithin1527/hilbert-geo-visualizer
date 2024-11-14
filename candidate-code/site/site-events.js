@@ -371,6 +371,9 @@ export function initContextMenu(siteManager) {
                 console.log(plottingPoints.length);
                 
                 let perimeterTuples = [] 
+                let minPerim = Infinity;
+                let minCenter = []
+
                 plottingPoints.forEach(center => {
                     try {
 
@@ -382,13 +385,19 @@ export function initContextMenu(siteManager) {
                         perimeterTuples.push([center.x, center.y, perim]);
 
                         center.draw(siteManager.canvas.ctx);
+
+                        if (perim < minPerim) {
+                            minPerim = perim;
+                            minCenter = center;
+                        }
                         
                     } catch (error) {
                         console.log(error);
                     }
                 });
 
-                console.log(perimeterTuples.length);
+                minCenter.setColor("orange");
+                minCenter.draw(siteManager.canvas.ctx);
 
                 create3DPlotInNewWindow(perimeterTuples);
             }
