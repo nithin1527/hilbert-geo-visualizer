@@ -1662,6 +1662,14 @@ export function create3DPlotInNewWindow(dataTuples, options = {}) {
   const y = dataTuples.map(tuple => tuple[1]);
   const z = dataTuples.map(tuple => tuple[2]);
 
+  // Calculate min and max for each axis
+  const xMin = Math.min(...x);
+  const xMax = Math.max(...x);
+  const yMin = Math.min(...y);
+  const yMax = Math.max(...y);
+  const zMin = Math.min(...z);
+  const zMax = Math.max(...z);
+
   // Define the trace based on plot type
   let trace;
   if (plotType === 'scatter3d') {
@@ -1722,13 +1730,39 @@ export function create3DPlotInNewWindow(dataTuples, options = {}) {
 
   const data = [trace];
 
+  // Define buffer percentage (e.g., 10%)
+  const bufferFactor = 0.01;
+
+  // Calculate buffered ranges
+  const finalXRange = [
+    xMin - bufferFactor * (xMax - xMin),
+    xMax + bufferFactor * (xMax - xMin)
+  ];
+  const finalYRange = [
+    yMin - bufferFactor * (yMax - yMin),
+    yMax + bufferFactor * (yMax - yMin)
+  ];
+  const finalZRange = [
+    zMin - bufferFactor * (zMax - zMin),
+    zMax + bufferFactor * (zMax - zMin)
+  ];
+
   const layout = {
     title: title,
     autosize: true,
     scene: {
-      xaxis: { title: 'X' },
-      yaxis: { title: 'Y' },
-      zaxis: { title: 'Z' },
+      xaxis: { 
+        title: 'X', 
+        range: finalXRange // Apply buffered X range
+      },
+      yaxis: { 
+        title: 'Y', 
+        range: finalYRange // Apply buffered Y range
+      },
+      zaxis: { 
+        title: 'Z', 
+        range: finalZRange // Apply buffered Z range
+      },
     },
     margin: {
       l: 0,

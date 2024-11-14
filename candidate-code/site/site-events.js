@@ -364,20 +364,31 @@ export function initContextMenu(siteManager) {
             const selectedSites = siteManager.getSelectedSites();
             siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
             if (selectedSites.length === 2) {
-                let bisector = siteManager.bisectorManager.createTempBisector(selectedSites[0], selectedSites[1]);
-                let plottingPoints = bisector.plottingPoints;
+
+                let plottingPoints = siteManager.bisectorManager.getBisectorPoints(selectedSites[0], selectedSites[1]);
                 let polygon = siteManager.canvas.polygon;
+
+                console.log(plottingPoints.length);
                 
                 let perimeterTuples = [] 
                 plottingPoints.forEach(center => {
                     try {
+
                         let perim = new HilbertBall(
                             new Site(center.x, center.y, polygon),
                             hilbertDistance(selectedSites[0], center, polygon)
                         ).computePerimeter(polygon);
+                        
                         perimeterTuples.push([center.x, center.y, perim]);
-                    } catch (error) {}
+
+                        center.draw(siteManager.canvas.ctx);
+                        
+                    } catch (error) {
+                        console.log(error);
+                    }
                 });
+
+                console.log(perimeterTuples.length);
 
                 create3DPlotInNewWindow(perimeterTuples);
             }

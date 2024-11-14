@@ -879,7 +879,11 @@ export class Bisector {
     this.bisectorPiecesDir1 = this.getBisectorPieces(this.middleSector.endpoints[0]);
     this.bisectorPiecesDir2 = this.getBisectorPieces(this.middleSector.endpoints[1]);
     this.bisectorPieces = [this.middleSector.bisectorPiece].concat(this.bisectorPiecesDir1, this.bisectorPiecesDir2);
-    this.plottingPoints = this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []);
+  }
+
+  getPlottingPoints() {
+    console.log(this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []));
+    return this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []);
   }
 
   draw(ctx) {
