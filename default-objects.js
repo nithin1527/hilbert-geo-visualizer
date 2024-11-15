@@ -910,7 +910,7 @@ export class BisectorPiece {
     this.plottingPoints = this.generatePoints();
   }
 
-  generatePoints(granularity = 20) {
+  generatePoints(granularity = 30) {
     if (this.isMiddleSector) {
       return generateLinePoints(this.start, this.end, granularity);
     } else {
