@@ -35,6 +35,12 @@ export function initMouseActions(siteManager) {
                 if (siteManager.hilbertDistanceManager.active) {
                     siteManager.hilbertDistanceManager.updateSavedDistances();
                 }
+
+                // TEMP
+                // Check if exactly two sites are selected
+                if (siteManager.canvas.sites.length == 2) {
+                    handlePlotPerimeterItem(siteManager.canvas.sites, siteManager);
+                }
             }
         },
         mouseup: (event) => {
@@ -73,6 +79,58 @@ export function initMouseActions(siteManager) {
             }
         }
     });
+}
+
+function handlePlotPerimeterItem(selectedSites, siteManager) {
+    siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
+
+    if (selectedSites.length === 2) {
+        const [site1, site2] = selectedSites;
+        const polygon = siteManager.canvas.polygon;
+
+        let plottingPoints = siteManager.bisectorManager.getBisectorPoints(site1, site2);
+
+        let perimeterTuples = [];
+        let minPerim = Infinity;
+        let minCenter = null;
+
+        plottingPoints.forEach(center => {
+            try {
+                let ball = new HilbertBall(
+                    new Site(center.x, center.y, polygon),
+                    hilbertDistance(site1, center, polygon)
+                );
+                let perim = ball.computePerimeter(polygon);
+
+                perimeterTuples.push([center.x, center.y, perim]);
+
+                // Draw the ball
+                ball.setDrawSpokes(false);
+                
+
+                // Track the minimum perimeter and center
+                if (perim < minPerim) {
+                    minPerim = perim;
+                    minCenter = center;
+                }
+            } catch (error) {
+            }
+        });
+
+        if (minCenter) {
+            minCenter.setColor("orange");
+            minCenter.draw(siteManager.canvas.ctx);
+            let ball = new HilbertBall(
+                new Site(minCenter.x, minCenter.y, polygon),
+                hilbertDistance(site1, minCenter, polygon)
+            );
+            ball.setDrawSpokes(false)
+            ball.draw(siteManager.canvas.ctx);
+        }
+
+        // Optionally, create a 3D plot
+        // create3DPlotInNewWindow(perimeterTuples);
+    }
 }
 
 function getChangedProperties() {
@@ -376,15 +434,17 @@ export function initContextMenu(siteManager) {
 
                 plottingPoints.forEach(center => {
                     try {
-
-                        let perim = new HilbertBall(
+                        let ball = new HilbertBall(
                             new Site(center.x, center.y, polygon),
                             hilbertDistance(selectedSites[0], center, polygon)
-                        ).computePerimeter(polygon);
+                        )
+                        let perim = ball.computePerimeter(polygon);
                         
                         perimeterTuples.push([center.x, center.y, perim]);
 
-                        center.draw(siteManager.canvas.ctx);
+                        // center.draw(siteManager.canvas.ctx);
+                        ball.setDrawSpokes(false);
+                        ball.draw(siteManager.canvas.ctx);
 
                         if (perim < minPerim) {
                             minPerim = perim;
@@ -399,7 +459,7 @@ export function initContextMenu(siteManager) {
                 minCenter.setColor("orange");
                 minCenter.draw(siteManager.canvas.ctx);
 
-                create3DPlotInNewWindow(perimeterTuples);
+                // create3DPlotInNewWindow(perimeterTuples);
             }
             contextMenu.style.display = 'none';
         });
