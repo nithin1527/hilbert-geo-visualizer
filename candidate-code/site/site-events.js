@@ -127,9 +127,6 @@ function handlePlotPerimeterItem(selectedSites, siteManager) {
             ball.setDrawSpokes(false)
             ball.draw(siteManager.canvas.ctx);
         }
-
-        // Optionally, create a 3D plot
-        // create3DPlotInNewWindow(perimeterTuples);
     }
 }
 
@@ -459,7 +456,7 @@ export function initContextMenu(siteManager) {
                 minCenter.setColor("orange");
                 minCenter.draw(siteManager.canvas.ctx);
 
-                // create3DPlotInNewWindow(perimeterTuples);
+                create3DPlotInNewWindow(perimeterTuples);
             }
             contextMenu.style.display = 'none';
         });

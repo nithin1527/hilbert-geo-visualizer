@@ -790,6 +790,7 @@ export class Bisector {
     this.s2 = middleSector.s2;
     this.omega = middleSector.omega;
     this.computeBisector(this.s1, this.s2);
+    // this.points = this.middleSector.bisectorPiece.pointsOnPiece;
     this.points = this.middleSector.bisectorPiece.pointsOnPiece;
   }
 
@@ -882,9 +883,9 @@ export class Bisector {
   }
 
   getPlottingPoints() {
-    // console.log(this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []));
-    return this.middleSector.bisectorPiece.plottingPoints
-    // this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []);
+    console.log(this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []));
+    // return this.middleSector.bisectorPiece.plottingPoints
+    return this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []);
   }
 
   draw(ctx) {
@@ -911,24 +912,25 @@ export class BisectorPiece {
   }
 
   generatePoints(granularity = 30) {
-    if (this.isMiddleSector) {
-      return generateLinePoints(this.start, this.end, granularity);
-    } else {
-      return [];
-    }
-    // if (this.isLine) {
+    // if (this.isMiddleSector) {
     //   return generateLinePoints(this.start, this.end, granularity);
     // } else {
-    //   const conicType = determineConic(this.equation);
-    //   if (conicType === 'ellipse') {
-    //     return generateEllipsePoints(this.equation, this.start, this.end, granularity);
-    //   } else if (conicType === 'hyperbola') {
-    //     return generateHyperbolaPoints(this.equation, this.start, this.end, this.sector, granularity);
-    //   } else {
-    //     console.warn("Unsupported conic type:", conicType);
-    //     return [];
-    //   }
+    //   return [];
     // }
+    
+    if (this.isLine) {
+      return generateLinePoints(this.start, this.end, granularity);
+    } else {
+      const conicType = determineConic(this.equation);
+      if (conicType === 'ellipse') {
+        return generateEllipsePoints(this.equation, this.start, this.end, granularity);
+      } else if (conicType === 'hyperbola') {
+        return generateHyperbolaPoints(this.equation, this.start, this.end, this.sector, granularity);
+      } else {
+        console.warn("Unsupported conic type:", conicType);
+        return [];
+      }
+    }
   }
 
   draw(ctx, color = 'green') {
