@@ -1,4 +1,4 @@
-import { hilbertDistance } from "../../default-functions.js";
+import { hilbertDistance, thompsonDistance } from "../../default-functions.js";
 
 export class HilbertDistanceManager {
     constructor(canvas) {
@@ -12,7 +12,7 @@ export class HilbertDistanceManager {
         this.ensureLabels(selectedSites);
 
         const [site1, site2] = selectedSites;
-        const distance = hilbertDistance(site1, site2, this.canvas.polygon);
+        const distance = thompsonDistance(site1, site2, this.canvas.polygon);
 
         this.displayDistance(site1, site2, distance);
     }
@@ -84,7 +84,7 @@ export class HilbertDistanceManager {
     addSavedDistance(selectedSites) {
         this.ensureLabels(selectedSites);
         const [site1, site2] = selectedSites;
-        const distanceValue = hilbertDistance(site1, site2, this.canvas.polygon);
+        const distanceValue = thompsonDistance(site1, site2, this.canvas.polygon);
 
         this.savedDistances.push({
             points: [site1.label, site2.label],
@@ -157,7 +157,7 @@ export class HilbertDistanceManager {
             if (site1 && site2) {
                 return {
                     ...distance,
-                    value: hilbertDistance(site1, site2, this.canvas.polygon)
+                    value: thompsonDistance(site1, site2, this.canvas.polygon)
                 };
             } else {
                 // If one of the sites is deleted, keep the distance static

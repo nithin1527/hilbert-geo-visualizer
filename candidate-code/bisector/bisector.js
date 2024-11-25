@@ -47,7 +47,7 @@ export class BisectorManager {
         const maxY = Math.max(...this.canvas.polygon.vertices.map(v => v.y));
     
         // Set resolution for the grid
-        const resolution = 0.8; // Adjust resolution for better performance/accuracy
+        const resolution = 2; // Adjust resolution for better performance/accuracy
     
         for (let x = minX; x <= maxX; x += resolution) {
             for (let y = minY; y <= maxY; y += resolution) {

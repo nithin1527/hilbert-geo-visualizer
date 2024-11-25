@@ -38,9 +38,10 @@ export function initMouseActions(siteManager) {
 
                 // TEMP
                 // Check if exactly two sites are selected
-                // if (siteManager.canvas.sites.length == 2) {
-                //     handlePlotPerimeterItem(siteManager.canvas.sites, siteManager);
-                // }
+                if (siteManager.canvas.sites.length == 2) {
+                    const selectedSites = siteManager.canvas.sites;
+                    siteManager.bisectorManager.createThompsonBisector(selectedSites[0], selectedSites[1]);
+                }
             }
         },
         mouseup: (event) => {
