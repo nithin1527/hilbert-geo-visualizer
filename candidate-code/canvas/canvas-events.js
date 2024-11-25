@@ -24,8 +24,8 @@ export function initEvents(canvas) {
       canvas.drawPiMap();
     });
 
-    const showPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
-    showPointPiHeatMapBtn.addEventListener('click', (event) => {
+    const showHilbertPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
+    showHilbertPointPiHeatMapBtn.addEventListener('click', (event) => {
       canvas.drawPointPiMap();
     });
     // ----------------------------------------------------------------------------------------------------

@@ -299,27 +299,28 @@ export function initContextMenu(siteManager) {
 
             const site = siteManager.getSiteSelected();
 
-            event.preventDefault();
-            const { clientX: mouseX, clientY: mouseY } = event;
-            contextMenu.style.top = `${mouseY}px`;
-            contextMenu.style.left = `${mouseX}px`;
-            contextMenu.style.display = 'block';
-
             if (site instanceof HilbertBall) {
+                event.preventDefault();
+                const { clientX: mouseX, clientY: mouseY } = event;
+                contextMenu.style.top = `${mouseY}px`;
+                contextMenu.style.left = `${mouseX}px`;
+                contextMenu.style.display = 'block';
                 calcPerimBall.style.display = 'block';
+
+                calculateHilbertDistanceItem.style.display = 'none';
+                saveHilbertDistanceItem.style.display = 'none';
+                drawSegmentItem.style.display = 'none';
+                drawThompsonBisector.style.display = 'none';
+                drawBisector.style.display = 'none';
+                calcLengthOfSegment.style.display = 'none';
+                drawZRegion.style.display = 'none';
+                drawHilbertCircumcenter.style.display = 'none';
+                drawHilbertCircumcenterBisectors.style.display = 'none';
+                drawHMERB.style.display = 'none';
+                plotPerimeterItem.style.display = 'none';
             }
 
-            calculateHilbertDistanceItem.style.display = 'none';
-            saveHilbertDistanceItem.style.display = 'none';
-            drawSegmentItem.style.display = 'none';
-            drawThompsonBisector.style.display = 'none';
-            drawBisector.style.display = 'none';
-            calcLengthOfSegment.style.display = 'none';
-            drawZRegion.style.display = 'none';
-            drawHilbertCircumcenter.style.display = 'none';
-            drawHilbertCircumcenterBisectors.style.display = 'none';
-            drawHMERB.style.display = 'none';
-            plotPerimeterItem.style.display = 'none';
+            
             
         } else if (siteManager.checkOneSegmentSelected()) {
             event.preventDefault();
