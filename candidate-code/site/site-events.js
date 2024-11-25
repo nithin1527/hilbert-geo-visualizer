@@ -230,7 +230,6 @@ export function initContextMenu(siteManager) {
     const drawBisector = document.getElementById('drawBisector');
     const drawThompsonBisector = document.getElementById('drawThompsonBisector');
 
-
     const plotPerimeterItem = document.getElementById('plotPerimeter');
     const drawZRegion = document.getElementById('drawZRegion');
     const calcPerimBall = document.getElementById('calcPerimBall');
@@ -239,16 +238,6 @@ export function initContextMenu(siteManager) {
     const drawHilbertCircumcenter = document.getElementById('drawHilbertCircumcenter');
     const drawHilbertCircumcenterBisectors = document.getElementById('drawHilbertCircumcenterBisectors');
     const drawHMERB = document.getElementById('drawMERB');
-
-    const showPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
-    showPointPiHeatMapBtn.addEventListener('click', (event) => {
-        const selectedSites = siteManager.getSelectedSites();
-        siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
-        if (selectedSites.length === 1) {
-            showPointPiHeatMapBtn.style.display = this.polygon.vertices.length > 2 ? 'block' : 'none';
-            
-        }
-    });
 
     // Hide context menu on any click
     document.addEventListener('click', () => {
@@ -309,26 +298,28 @@ export function initContextMenu(siteManager) {
         } else if (siteManager.checkOneSiteSelected()) {
 
             const site = siteManager.getSiteSelected();
-            if (site instanceof HilbertBall) {
-                event.preventDefault();
-                const { clientX: mouseX, clientY: mouseY } = event;
-                contextMenu.style.top = `${mouseY}px`;
-                contextMenu.style.left = `${mouseX}px`;
-                contextMenu.style.display = 'block';
 
+            event.preventDefault();
+            const { clientX: mouseX, clientY: mouseY } = event;
+            contextMenu.style.top = `${mouseY}px`;
+            contextMenu.style.left = `${mouseX}px`;
+            contextMenu.style.display = 'block';
+
+            if (site instanceof HilbertBall) {
                 calcPerimBall.style.display = 'block';
-                calculateHilbertDistanceItem.style.display = 'none';
-                saveHilbertDistanceItem.style.display = 'none';
-                drawSegmentItem.style.display = 'none';
-                drawThompsonBisector.style.display = 'none';
-                drawBisector.style.display = 'none';
-                calcLengthOfSegment.style.display = 'none';
-                drawZRegion.style.display = 'none';
-                drawHilbertCircumcenter.style.display = 'none';
-                drawHilbertCircumcenterBisectors.style.display = 'none';
-                drawHMERB.style.display = 'none';
-                plotPerimeterItem.style.display = 'none';
             }
+
+            calculateHilbertDistanceItem.style.display = 'none';
+            saveHilbertDistanceItem.style.display = 'none';
+            drawSegmentItem.style.display = 'none';
+            drawThompsonBisector.style.display = 'none';
+            drawBisector.style.display = 'none';
+            calcLengthOfSegment.style.display = 'none';
+            drawZRegion.style.display = 'none';
+            drawHilbertCircumcenter.style.display = 'none';
+            drawHilbertCircumcenterBisectors.style.display = 'none';
+            drawHMERB.style.display = 'none';
+            plotPerimeterItem.style.display = 'none';
             
         } else if (siteManager.checkOneSegmentSelected()) {
             event.preventDefault();

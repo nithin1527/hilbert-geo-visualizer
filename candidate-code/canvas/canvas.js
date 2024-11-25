@@ -1,6 +1,6 @@
 // canvas/canvas.js
 import { ConvexPolygon, Point, SelectableSegment, HilbertBall } from "../../default-objects.js";
-import { drawInfoBox, clearInfoBoxes, renderAllKaTeX, hidePiGradientBar, createPiMap, createScatterPlot } from "../../default-functions.js";
+import { drawInfoBox, clearInfoBoxes, renderAllKaTeX, hidePiGradientBar, createPiMap, createScatterPlot, createPointPiMap } from "../../default-functions.js";
 import { initEvents } from "./canvas-events.js";
 
 export class Canvas {
@@ -83,6 +83,9 @@ export class Canvas {
     updateShowHeatMapVis() {
         const showPiHeatMapBtn = document.getElementById('showPiHeatMapBtn');
         showPiHeatMapBtn.style.display = this.polygon.vertices.length > 2 ? 'block' : 'none';
+
+        const showPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
+        showPointPiHeatMapBtn.style.display = this.polygon.vertices.length > 2 && this.sites.length == 1 ? 'block' : 'none';
     }
 
     setHilbertDistanceManager(hilbertDistanceManager) {
@@ -178,6 +181,34 @@ export class Canvas {
         }
     }
 
+    drawPointPiMap() {
+        if (this.polygon.vertices.length > 2 && this.sites.length == 1) {
+            let stepSize;
+            let isValidInput = false;
+    
+            while (!isValidInput) {
+                stepSize = prompt("Enter a step size for level curves or 0 for the full heat map");
+    
+                if (stepSize === null) {
+                    return;
+                } else if (stepSize === "" || isNaN(Number(stepSize))) {
+                    alert("Please enter a valid number.");
+                } else {
+                    isValidInput = true;
+                    stepSize = Number(stepSize);
+                }
+            }
+    
+            if (stepSize > 0) {
+                createPointPiMap(this.ctx, 1, this.polygon, stepSize, this.sites[0]);
+            } else {
+                createPointPiMap(this.ctx, 1, this.polygon, -1, this.sites[0]);
+            }
+        } else {
+            alert('Polygon must have 3 or more vertices');
+        }
+    }
+
     drawSegments() {
         this.segments.forEach(segment => {
             segment.draw(this.ctx);
@@ -185,6 +216,7 @@ export class Canvas {
     }   
 
     drawAll() {
+        this.updateShowHeatMapVis();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.polygon.draw(this.ctx);

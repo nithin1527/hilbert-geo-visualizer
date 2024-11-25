@@ -954,6 +954,140 @@ export async function createPiMap(ctx, resolution = 1, polygon, stepSize = -1, r
   
 }
 
+export async function createPointPiMap(ctx, resolution = 1, polygon, stepSize = -1, site) {
+  const minX = Math.min(...polygon.vertices.map(v => v.x)) - 1;
+  const maxX = Math.max(...polygon.vertices.map(v => v.x)) + 1;
+  const minY = Math.min(...polygon.vertices.map(v => v.y)) - 1;
+  const maxY = Math.max(...polygon.vertices.map(v => v.y)) + 1;
+
+  const width = Math.ceil((maxX - minX) / resolution);
+  const height = Math.ceil((maxY - minY) / resolution);
+  const piValues = Array(height).fill().map(() => Array(width).fill(null));
+
+  let minPi = Infinity;
+  let maxPi = 0;
+
+  let minSideLength = Infinity;
+  let maxSideLength = 0;
+  const sideLengths = Array(height).fill().map(() => Array(width).fill(null));
+
+  // Initialize progress bar
+  const progressBarContainer = document.getElementById('progressBarContainer');
+  const progressBar = document.getElementById('progressBar');
+  progressBarContainer.style.display = 'block';
+  progressBar.style.width = '0%';
+
+  const totalPoints = width * height;
+  let processedPoints = 0;
+
+  const processPoint = async (x, y) => {
+    const pointX = minX + x * resolution;
+    const pointY = minY + y * resolution;
+    const point = new Site(pointX, pointY, polygon, 'blue', false, false, false, 'placeholder', true);
+    if (polygon.contains(point) && !polygon.onBoundary(point)) {
+      try {
+
+        let radius = hilbertDistance(point, site, polygon);
+        const hilbertBall = new HilbertBall(point,radius);
+
+        let sideLength = hilbertDistance(hilbertBall.polygon.segments[0].start, hilbertBall.polygon.segments[0].end, hilbertBall.convexPolygon);
+        sideLengths[y][x] = sideLength;
+        if (sideLength < minSideLength) minSideLength = sideLength;
+        if (sideLength > minSideLength) maxSideLength = sideLength;
+
+        const perimeter = hilbertBall.computePerimeter(polygon);
+        let pi = perimeter / 2 / radius;
+
+        if (pi >= 3) {
+          piValues[y][x] = pi;
+        } else {
+          piValues[y][x] = 'KNN';
+        }
+
+        if (pi !== Infinity) {
+          if (pi < minPi) {minPi = pi};
+          if (pi > maxPi) {maxPi = pi};
+        }
+
+      } catch (error) {
+        piValues[y][x] = 'KNN';
+        sideLengths[y][x] = 0;
+      }
+    }
+
+    // Update progress
+    processedPoints++;
+    const progress = (processedPoints / totalPoints) * 100;
+    progressBar.style.width = `${progress}%`;
+
+    // Use requestAnimationFrame to update the UI smoothly
+    if (processedPoints % 100 === 0) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+  };
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      await processPoint(x, y);
+    }
+  }
+
+  // Hide progress bar
+  progressBarContainer.style.display = 'none';
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (piValues[y][x] === 'KNN') {
+        piValues[y][x] = findNearestNeighborValue(piValues, x, y);
+        sideLengths[y][x] = findNearestNeighborValue(sideLengths, x, y);
+      }
+    }
+  }
+
+  const gradientField = computeGradient(piValues, resolution);
+  normalizeGradient(gradientField);
+
+  createGradientFlowPlot(gradientField, minX, minY, resolution, "Gradient Flow Map");
+  create3DPiPlot(piValues, minX, minY, resolution, "3D Pi Value Plot");
+  create3DPiLengthPlot(piValues, minSideLength, maxSideLength, resolution, "3D Side Length Value Plot", sideLengths);
+  createPiGradientBar(minPi, maxPi);
+
+
+  if (stepSize > 0) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const piValue = piValues[y][x];
+        let color;
+        if (piValue !== null) {  
+          if (piValue % stepSize < 0.04) {
+            const normalizedValue = (piValue - 3) / (maxPi - 3);
+            color = getHeatMapColor(normalizedValue);
+          } else {
+            color = 'white';
+          }
+          ctx.fillStyle = color;
+          ctx.fillRect(minX + x * resolution, minY + y * resolution, resolution, resolution);
+        }
+      }
+    }
+  } else {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const piValue = piValues[y][x];
+        let color;
+        if (piValue !== null) {  
+          const normalizedValue = (piValue - 3) / (maxPi - 3);
+          color = getHeatMapColor(normalizedValue);
+          ctx.fillStyle = color;
+          ctx.fillRect(minX + x * resolution, minY + y * resolution, resolution, resolution);
+        }
+      }
+    }
+  }
+
+  
+}
+
 export function createScatterPlot(xValues, yValues, title, xAxisLabel, yAxisLabel) {
   // Create a new window/tab
   const newWindow = window.open('', '_blank');

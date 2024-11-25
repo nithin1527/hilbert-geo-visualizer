@@ -23,6 +23,11 @@ export function initEvents(canvas) {
     showPiHeatMapBtn.addEventListener('click', (event) => {
       canvas.drawPiMap();
     });
+
+    const showPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
+    showPointPiHeatMapBtn.addEventListener('click', (event) => {
+      canvas.drawPointPiMap();
+    });
     // ----------------------------------------------------------------------------------------------------
   
     document.getElementById('modeSwitch').addEventListener('change', (event) => {
@@ -77,4 +82,5 @@ export function initEvents(canvas) {
         }
       } 
     });
+
   }
