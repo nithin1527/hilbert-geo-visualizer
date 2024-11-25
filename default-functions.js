@@ -113,6 +113,13 @@ export function hilbertDistance(site1, site2, polygon) {
     return 0.5 * Math.log(norm(S1, I2) * norm(S2, I1) / norm(S2, I2) / norm(S1, I1));
 }
 
+export function thompsonDistance(site1, site2, polygon) {
+    let siteSegment = new Segment(site1, site2);
+    let intersectionPoints = polygon.intersectWithLine(siteSegment);
+    let [I1, S1, S2, I2] = getCollinearPoints(site1, site2, intersectionPoints);
+    return Math.max(Math.log(norm(S1, I2) / norm(S2, I2)), Math.log(norm(S2, I1) / norm(S1, I1)));
+}
+
 /* 
   (points:Point) -> (hull:[Point]) 
   - returns the convex hull of a set of points

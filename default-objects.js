@@ -883,7 +883,7 @@ export class Bisector {
   }
 
   getPlottingPoints() {
-    console.log(this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []));
+    // console.log(this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []));
     // return this.middleSector.bisectorPiece.plottingPoints
     return this.bisectorPieces.reduce((acc, piece) => acc.concat(piece.plottingPoints), []);
   }
@@ -911,7 +911,7 @@ export class BisectorPiece {
     this.plottingPoints = this.generatePoints();
   }
 
-  generatePoints(granularity = 30) {
+  generatePoints(granularity = 50) {
     // if (this.isMiddleSector) {
     //   return generateLinePoints(this.start, this.end, granularity);
     // } else {

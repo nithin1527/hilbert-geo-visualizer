@@ -1,5 +1,5 @@
 import { Bisector, ConvexPolygon, MiddleSector, Point } from "../../default-objects.js";
-import { drawPieceForIntersection, isIntersectionPixel, intersectTwoBisector, intersectThreeBisector } from "../../default-functions.js";
+import { drawPieceForIntersection, isIntersectionPixel, intersectTwoBisector, intersectThreeBisector, thompsonDistance } from "../../default-functions.js";
 
 export class BisectorManager {
     constructor(canvas) {
@@ -35,6 +35,40 @@ export class BisectorManager {
 
         this.canvas.addBisector(bisector);
         this.addSavedBisector([s1, s2], bisector);
+    }
+
+    createThompsonBisector(s1, s2) {
+        const ctx = this.canvas.ctx;
+    
+        // Get bounding box of the polygon
+        const minX = Math.min(...this.canvas.polygon.vertices.map(v => v.x));
+        const maxX = Math.max(...this.canvas.polygon.vertices.map(v => v.x));
+        const minY = Math.min(...this.canvas.polygon.vertices.map(v => v.y));
+        const maxY = Math.max(...this.canvas.polygon.vertices.map(v => v.y));
+    
+        // Set resolution for the grid
+        const resolution = 0.8; // Adjust resolution for better performance/accuracy
+    
+        for (let x = minX; x <= maxX; x += resolution) {
+            for (let y = minY; y <= maxY; y += resolution) {
+                const point = new Point(x, y);
+    
+                // Check if the point is inside the polygon
+                if (this.canvas.polygon.contains(point)) {
+                    // Compute Hilbert distances
+                    try {
+                        const d1 = thompsonDistance(s1, point, this.canvas.polygon);
+                        const d2 = thompsonDistance(s2, point, this.canvas.polygon);
+        
+                        // Check if distances are approximately equal
+                        if (Math.abs(d1 - d2) < 1e-2) { // Tolerance for floating-point comparisons
+                            point.setColor('red'); // Optional: Highlight equidistant points
+                            point.draw(ctx);
+                        }
+                    } catch (error) {}
+                }
+            }
+        }
     }
 
     getBisectorPoints(s1, s2) {

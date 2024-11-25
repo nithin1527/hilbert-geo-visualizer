@@ -38,9 +38,9 @@ export function initMouseActions(siteManager) {
 
                 // TEMP
                 // Check if exactly two sites are selected
-                if (siteManager.canvas.sites.length == 2) {
-                    handlePlotPerimeterItem(siteManager.canvas.sites, siteManager);
-                }
+                // if (siteManager.canvas.sites.length == 2) {
+                //     handlePlotPerimeterItem(siteManager.canvas.sites, siteManager);
+                // }
             }
         },
         mouseup: (event) => {
@@ -228,6 +228,9 @@ export function initContextMenu(siteManager) {
     const saveHilbertDistanceItem = document.getElementById('saveHilbertDistance');
     const drawSegmentItem = document.getElementById('drawSegment');
     const drawBisector = document.getElementById('drawBisector');
+    const drawThompsonBisector = document.getElementById('drawThompsonBisector');
+
+
     const plotPerimeterItem = document.getElementById('plotPerimeter');
     const drawZRegion = document.getElementById('drawZRegion');
     const calcPerimBall = document.getElementById('calcPerimBall');
@@ -236,6 +239,16 @@ export function initContextMenu(siteManager) {
     const drawHilbertCircumcenter = document.getElementById('drawHilbertCircumcenter');
     const drawHilbertCircumcenterBisectors = document.getElementById('drawHilbertCircumcenterBisectors');
     const drawHMERB = document.getElementById('drawMERB');
+
+    const showPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
+    showPointPiHeatMapBtn.addEventListener('click', (event) => {
+        const selectedSites = siteManager.getSelectedSites();
+        siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
+        if (selectedSites.length === 1) {
+            showPointPiHeatMapBtn.style.display = this.polygon.vertices.length > 2 ? 'block' : 'none';
+            
+        }
+    });
 
     // Hide context menu on any click
     document.addEventListener('click', () => {
@@ -253,6 +266,7 @@ export function initContextMenu(siteManager) {
 
             drawSegmentItem.style.display = 'none';
             drawBisector.style.display = 'none';
+            drawThompsonBisector.style.display = 'none';
             drawZRegion.style.display = 'none';
             calcPerimBall.style.display = 'none';
             calcLengthOfSegment.style.display = 'none';
@@ -282,6 +296,7 @@ export function initContextMenu(siteManager) {
 
             drawSegmentItem.style.display = 'block';
             drawBisector.style.display = 'block';
+            drawThompsonBisector.style.display = 'block';
             drawZRegion.style.display = 'block';
             calcPerimBall.style.display = 'none';
             calcLengthOfSegment.style.display = 'none';
@@ -305,6 +320,7 @@ export function initContextMenu(siteManager) {
                 calculateHilbertDistanceItem.style.display = 'none';
                 saveHilbertDistanceItem.style.display = 'none';
                 drawSegmentItem.style.display = 'none';
+                drawThompsonBisector.style.display = 'none';
                 drawBisector.style.display = 'none';
                 calcLengthOfSegment.style.display = 'none';
                 drawZRegion.style.display = 'none';
@@ -332,6 +348,7 @@ export function initContextMenu(siteManager) {
             drawHilbertCircumcenterBisectors.style.display = 'none';
             drawHMERB.style.display = 'none';
             plotPerimeterItem.style.display = 'none';
+            drawThompsonBisector.style.display = 'none';
 
         } else if (siteManager.checkAnySelected()) {
             event.preventDefault();
@@ -351,6 +368,7 @@ export function initContextMenu(siteManager) {
             drawHilbertCircumcenterBisectors.style.display = 'none';
             drawHMERB.style.display = 'block';
             plotPerimeterItem.style.display = 'none';
+            drawThompsonBisector.style.display = 'none';
         } else {
             contextMenu.style.display = 'none';
         }
@@ -413,9 +431,20 @@ export function initContextMenu(siteManager) {
             }
             contextMenu.style.display = 'none';
         });
+        
+        drawThompsonBisector.addEventListener('click', () => {
+            console.log('Draw Bisector Selected');
+            const selectedSites = siteManager.getSelectedSites();
+            siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
+            if (selectedSites.length === 2) {
+                siteManager.bisectorManager.createThompsonBisector(selectedSites[0], selectedSites[1]);
+            }
+            contextMenu.style.display = 'none';
+        });
 
         plotPerimeterItem.addEventListener('click', () => {
             console.log('Plot Perimeter Item Selected');
+            
             const selectedSites = siteManager.getSelectedSites();
             siteManager.hilbertDistanceManager.ensureLabels(selectedSites);
             if (selectedSites.length === 2) {
