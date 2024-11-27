@@ -216,7 +216,8 @@ export class Canvas {
     graphPerimBalls() {
         if (this.polygon.vertices.length > 2 && this.sites.length == 1) {
             let perim = prompt("Enter a perimeter value");
-            graphPerimBalls(this.ctx, 1.5, this.polygon, this.sites[0], this, perim);
+            let resolution = prompt("Enter a resolution value");
+            graphPerimBalls(this.ctx, resolution, this.polygon, this.sites[0], this, perim);
         } else {
             alert('Polygon must have 3 or more vertices');
         }
