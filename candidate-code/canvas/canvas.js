@@ -37,6 +37,7 @@ export class Canvas {
         this.segments = [];
         this.bisectors = [];
         this.zRegions = [];
+        this.perimPoints = [];
     }
     
     setPolygonType(type) {
@@ -214,7 +215,8 @@ export class Canvas {
 
     graphPerimBalls() {
         if (this.polygon.vertices.length > 2 && this.sites.length == 1) {
-            graphPerimBalls(this.ctx, 1, this.polygon, this.sites[0]);
+            let perim = prompt("Enter a perimeter value");
+            graphPerimBalls(this.ctx, 1.5, this.polygon, this.sites[0], this, perim);
         } else {
             alert('Polygon must have 3 or more vertices');
         }
@@ -231,6 +233,10 @@ export class Canvas {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.polygon.draw(this.ctx);
+
+        if (this.perimPoints.length > 0) {
+            this.perimPoints.forEach(pt => { pt.draw(this.ctx); })
+        }
 
         this.sites.forEach(site => {
             site.computeSpokes();
@@ -270,6 +276,7 @@ export class Canvas {
         this.segments = [];
         this.bisectors = [];
         this.ngonVertices = [];
+        this.perimPoints = [];
         this.polygon = new ConvexPolygon([], this.polygon.color, this.polygon.penWidth, this.polygon.showInfo, this.polygon.showVertices, this.polygon.vertexRadius);
 
         if (this.hilbertDistanceManager) {

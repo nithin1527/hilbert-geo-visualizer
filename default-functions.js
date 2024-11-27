@@ -954,7 +954,7 @@ export async function createPiMap(ctx, resolution = 1, polygon, stepSize = -1, r
   
 }
 
-export async function graphPerimBalls(ctx, resolution = 1, polygon, referencePoint = null) {
+export async function graphPerimBalls(ctx, resolution = 1, polygon, referencePoint = null, canvas, perim = 5) {
   const minX = Math.min(...polygon.vertices.map(v => v.x)) - 1;
   const maxX = Math.max(...polygon.vertices.map(v => v.x)) + 1;
   const minY = Math.min(...polygon.vertices.map(v => v.y)) - 1;
@@ -979,11 +979,15 @@ export async function graphPerimBalls(ctx, resolution = 1, polygon, referencePoi
     const point = new Site(pointX, pointY, polygon, 'blue', false, false, false, 'placeholder', true);
     if (polygon.contains(point) && !polygon.onBoundary(point)) {
       try {
-        const hilbertBall = new HilbertBall(point, hilbertDistance(referencePoint, point, polygon));
-        const perimeter = hilbertBall.computePerimeter(polygon);
-        let epsilon = 0.05;
-        if (Math.abs(perimeter - 2) < epsilon) {
-          final_centers.push(new Point(point.x, point.y,'red', 0.2));
+        let dist = hilbertDistance(referencePoint, point, polygon);
+        let desiredPerimeter = perim;
+        if (dist < (0.25 * desiredPerimeter)) {
+          const hilbertBall = new HilbertBall(point, dist);
+          const perimeter = hilbertBall.computePerimeter(polygon);
+          let epsilon = 0.05;
+          if (Math.abs(perimeter - desiredPerimeter) < epsilon) {
+            final_centers.push(new Point(point.x, point.y,'red', 0.5));
+          }
         }
       } catch (error) {}
     }
@@ -1006,6 +1010,7 @@ export async function graphPerimBalls(ctx, resolution = 1, polygon, referencePoi
   final_centers.forEach(center => {
     center.draw(ctx);  
   });
+  canvas.perimPoints = final_centers;
 }
 
 export async function createPointPiMap(ctx, resolution = 1, polygon, stepSize = -1, site) {
