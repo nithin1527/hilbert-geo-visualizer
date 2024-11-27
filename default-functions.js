@@ -983,7 +983,7 @@ export async function graphPerimBalls(ctx, resolution = 1, polygon, referencePoi
         const perimeter = hilbertBall.computePerimeter(polygon);
         let epsilon = 1e-1;
         if (Math.abs(perimeter - 1) < epsilon) {
-          final_centers.push(new Point(point.x, point.y,'red'));
+          final_centers.push(new Point(point.x, point.y,'red',0.1));
         }
       } catch (error) {}
     }
