@@ -1,6 +1,6 @@
 // canvas/canvas.js
 import { ConvexPolygon, Point, SelectableSegment, HilbertBall } from "../../default-objects.js";
-import { drawInfoBox, clearInfoBoxes, renderAllKaTeX, hidePiGradientBar, createPiMap, createScatterPlot, createPointPiMap } from "../../default-functions.js";
+import { drawInfoBox, clearInfoBoxes, renderAllKaTeX, hidePiGradientBar, createPiMap, createScatterPlot, createPointPiMap, graphPerimBalls } from "../../default-functions.js";
 import { initEvents } from "./canvas-events.js";
 
 export class Canvas {
@@ -86,6 +86,9 @@ export class Canvas {
 
         const showPointPiHeatMapBtn = document.getElementById('showPointPiHeatMapBtn');
         showPointPiHeatMapBtn.style.display = this.polygon.vertices.length > 2 && this.sites.length == 1 ? 'block' : 'none';
+
+        const showGraphPerimBalls = document.getElementById('showGraphPerimBalls');
+        showGraphPerimBalls.style.display = this.polygon.vertices.length > 2 && this.sites.length == 1 ? 'block' : 'none';
     }
 
     setHilbertDistanceManager(hilbertDistanceManager) {
@@ -204,6 +207,14 @@ export class Canvas {
             } else {
                 createPointPiMap(this.ctx, 1, this.polygon, -1, this.sites[0]);
             }
+        } else {
+            alert('Polygon must have 3 or more vertices');
+        }
+    }
+
+    graphPerimBalls() {
+        if (this.polygon.vertices.length > 2 && this.sites.length == 1) {
+            graphPerimBalls(this.ctx, 1, this.polygon, this.sites[0]);
         } else {
             alert('Polygon must have 3 or more vertices');
         }

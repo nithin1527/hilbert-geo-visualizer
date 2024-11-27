@@ -28,6 +28,11 @@ export function initEvents(canvas) {
     showHilbertPointPiHeatMapBtn.addEventListener('click', (event) => {
       canvas.drawPointPiMap();
     });
+
+    const showGraphPerimBalls = document.getElementById('showGraphPerimBalls');
+    showGraphPerimBalls.addEventListener('click', (event) => {
+      canvas.graphPerimBalls();
+    });
     // ----------------------------------------------------------------------------------------------------
   
     document.getElementById('modeSwitch').addEventListener('change', (event) => {

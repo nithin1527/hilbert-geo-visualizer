@@ -954,6 +954,60 @@ export async function createPiMap(ctx, resolution = 1, polygon, stepSize = -1, r
   
 }
 
+export async function graphPerimBalls(ctx, resolution = 1, polygon, referencePoint = null) {
+  const minX = Math.min(...polygon.vertices.map(v => v.x)) - 1;
+  const maxX = Math.max(...polygon.vertices.map(v => v.x)) + 1;
+  const minY = Math.min(...polygon.vertices.map(v => v.y)) - 1;
+  const maxY = Math.max(...polygon.vertices.map(v => v.y)) + 1;
+
+  const width = Math.ceil((maxX - minX) / resolution);
+  const height = Math.ceil((maxY - minY) / resolution);
+
+  // Initialize progress bar
+  const progressBarContainer = document.getElementById('progressBarContainer');
+  const progressBar = document.getElementById('progressBar');
+  progressBarContainer.style.display = 'block';
+  progressBar.style.width = '0%';
+
+  const totalPoints = width * height;
+  let processedPoints = 0;
+
+  let final_centers = [];
+  const processPoint = async (x, y) => {
+    const pointX = minX + x * resolution;
+    const pointY = minY + y * resolution;
+    const point = new Site(pointX, pointY, polygon, 'blue', false, false, false, 'placeholder', true);
+    if (polygon.contains(point) && !polygon.onBoundary(point)) {
+      try {
+        const hilbertBall = new HilbertBall(point, hilbertDistance(referencePoint, point, polygon));
+        const perimeter = hilbertBall.computePerimeter(polygon);
+        let epsilon = 1e-1;
+        if (Math.abs(perimeter - 1) < epsilon) {
+          final_centers.push(new Point(point.x, point.y,'red'));
+        }
+      } catch (error) {}
+    }
+
+    // Update progress
+    processedPoints++;
+    const progress = (processedPoints / totalPoints) * 100;
+    progressBar.style.width = `${progress}%`;
+    if (processedPoints % 100 === 0) await new Promise(resolve => requestAnimationFrame(resolve));
+  };
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      await processPoint(x, y);
+    }
+  }
+
+  progressBarContainer.style.display = 'none';
+
+  final_centers.forEach(center => {
+    center.draw(ctx);  
+  });
+}
+
 export async function createPointPiMap(ctx, resolution = 1, polygon, stepSize = -1, site) {
   const minX = Math.min(...polygon.vertices.map(v => v.x)) - 1;
   const maxX = Math.max(...polygon.vertices.map(v => v.x)) + 1;

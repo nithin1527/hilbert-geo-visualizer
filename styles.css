@@ -46,6 +46,28 @@
         transform: scale(0.98);
     }
 
+    .heatMapButton3 {
+        display: none;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        background-color: #169c45;
+        color: #ffffff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        font-family: 'Inter';
+        width: 100%;
+    }
+
+    .heatMapButton3:active {
+        transform: scale(0.98);
+    }
+
     .gon-icon-button {
         margin-left: 10px;
         width: 20px; /* Adjust width as needed */
