@@ -75,6 +75,7 @@ export class BisectorManager {
         
                         // Check if distances are approximately equal
                         if (Math.abs(d1 - d2) < 1e-2) { // Tolerance for floating-point comparisons
+                            point.setRadius(1);
                             point.setColor('red'); // Optional: Highlight equidistant points
                             point.draw(ctx);
                             points.push(point);
