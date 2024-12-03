@@ -1,4 +1,4 @@
-import { Bisector, ConvexPolygon, MiddleSector, Point } from "../../default-objects.js";
+import { Bisector, ConvexPolygon, MiddleSector, Point, ThompsonBisector } from "../../default-objects.js";
 import { drawPieceForIntersection, isIntersectionPixel, intersectTwoBisector, intersectThreeBisector, thompsonDistance } from "../../default-functions.js";
 
 export class BisectorManager {
@@ -38,6 +38,9 @@ export class BisectorManager {
     }
 
     createThompsonBisector(s1, s2) {
+
+
+
         const ctx = this.canvas.ctx;
     
         // Get bounding box of the polygon
@@ -47,7 +50,17 @@ export class BisectorManager {
         const maxY = Math.max(...this.canvas.polygon.vertices.map(v => v.y));
     
         // Set resolution for the grid
-        const resolution = 2; // Adjust resolution for better performance/accuracy
+        let resolution = prompt("Enter resolution (default is 1):");
+        if (resolution === null || resolution.trim() === "") {
+            resolution = 1;
+        } else {
+            resolution = parseFloat(resolution); // Convert to number
+            if (isNaN(resolution) || resolution <= 0) {
+                alert("Invalid input. Using default resolution of 1.");
+                resolution = 1;
+            }
+        }
+        let points = [];
     
         for (let x = minX; x <= maxX; x += resolution) {
             for (let y = minY; y <= maxY; y += resolution) {
@@ -64,11 +77,14 @@ export class BisectorManager {
                         if (Math.abs(d1 - d2) < 1e-2) { // Tolerance for floating-point comparisons
                             point.setColor('red'); // Optional: Highlight equidistant points
                             point.draw(ctx);
+                            points.push(point);
                         }
                     } catch (error) {}
                 }
             }
         }
+
+        this.canvas.thompsonBisectors.push(new ThompsonBisector(s1,s2,points));
     }
 
     getBisectorPoints(s1, s2) {

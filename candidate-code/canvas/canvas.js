@@ -38,6 +38,7 @@ export class Canvas {
         this.bisectors = [];
         this.zRegions = [];
         this.perimPoints = [];
+        this.thompsonBisectors = [];
     }
     
     setPolygonType(type) {
@@ -232,6 +233,14 @@ export class Canvas {
     drawAll() {
         this.updateShowHeatMapVis();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.thompsonBisectors = this.thompsonBisectors.filter(thompBobj => {
+            if (this.sites.includes(thompBobj.site1) && this.sites.includes(thompBobj.site2)) {
+                thompBobj.draw(this.ctx);
+                return true;
+            }
+            return false;
+        })
 
         this.polygon.draw(this.ctx);
 
